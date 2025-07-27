@@ -6,7 +6,7 @@
 
 namespace aura {
 
-// Константа для размера чанка (256 КБ)
+// Constant for chunk size (256 KB)
 const uint32_t CHUNK_SIZE = 256 * 1024;
 
 struct FileInfo {
@@ -20,16 +20,16 @@ class Node; // Forward declaration
 
 class FileSharer {
 public:
-    // Создает метаданные для файла и сохраняет их в .aura файл
+    // Creates metadata for a file and saves it to a .aura file
     bool share_file(const std::string& file_path, Node& node);
 
-    // Загружает метаданные из .aura файла
+    // Loads metadata from a .aura file
     FileInfo load_metadata(const std::string& metadata_path);
 
-    // Читает чанк из файла
+    // Reads a chunk from a file
     std::vector<uint8_t> get_chunk(const FileInfo& file_info, uint32_t chunk_index);
 
-    // Записывает чанк в файл
+    // Writes a chunk to a file
     void save_chunk(const FileInfo& file_info, uint32_t chunk_index, const std::vector<uint8_t>& data);
 };
 

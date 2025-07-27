@@ -5,31 +5,34 @@ project(Aura CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# --- Зависимости ---
+# --- Dependencies ---
 find_package(Protobuf REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(OpenSSL REQUIRED)
 
 # --- Protobuf --- 
-# Находим все .proto файлы
+# Find all .proto files
 file(GLOB PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.proto")
 
-# Генерируем C++ код из .proto файлов
+# Generate C++ code from .proto files
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
-# --- Исполняемый файл ---
+# --- Executable ---
 add_executable(aura
     src/main.cpp
     src/node.cpp
     src/session.cpp
     src/file_sharer.cpp
+    src/dht.cpp
+    src/dht_utils.cpp
     ${PROTO_SRCS}
 )
 
-# --- Подключение библиотек ---
+# --- Linking libraries ---
 target_include_directories(aura PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}
     include
+    include/aura
 )
 
 target_link_libraries(aura
@@ -37,5 +40,5 @@ target_link_libraries(aura
     ${Boost_LIBRARIES}
     ${OPENSSL_SSL_LIBRARY}
     ${OPENSSL_CRYPTO_LIBRARY}
-    pthread # Для Boost.Asio может потребоваться явное указание
+    pthread # May be required for Boost.Asio explicit linking
 )

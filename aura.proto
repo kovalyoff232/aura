@@ -3,14 +3,15 @@ syntax = "proto3";
 package aura;
 
 message Handshake {
-  // Уникальный ID узла
-  uint64 peer_id = 1;
+  // Unique node ID as a 160-bit hash (20 bytes)
+  bytes peer_id = 1;
   uint32 version = 2;
 }
 
 message PeerInfo {
   string address = 1;
   uint32 port = 2;
+  bytes peer_id = 3;
 }
 
 message Announce {
@@ -36,7 +37,50 @@ message Metadata {
   repeated bytes chunk_hashes = 4;
 }
 
-// "Конверт" для сообщений, позволяет легко расширять протокол.
+// --- DHT Messages ---
+
+// Request to find the closest nodes to target_id
+message FindNodeRequest {
+  bytes sender_id = 1;
+  bytes target_id = 2;
+}
+
+// Response with a list of the closest neighbors
+message FindNodeResponse {
+  repeated PeerInfo neighbors = 1;
+}
+
+// Request to find peers who have a file with the hash 'key'
+message FindValueRequest {
+  bytes sender_id = 1;
+  bytes key = 2; // file_hash
+}
+
+// Wrapper for a list of peers to use in 'oneof'
+message PeerList {
+  repeated PeerInfo peers = 1;
+}
+
+// Response to FindValueRequest
+message FindValueResponse {
+  bytes key = 1; // The key we are responding to
+  // The response will contain either a list of provider peers,
+  // or a list of closer nodes that we know of.
+  oneof result {
+    PeerList providers = 2;
+    FindNodeResponse closer_peers = 3;
+  }
+}
+
+// Request to store a [key, value] pair
+// In our case, the value is the PeerInfo of the provider
+message StoreValueRequest {
+    bytes sender_id = 1;
+    bytes key = 2;
+    PeerInfo provider = 3;
+}
+
+// "Envelope" for messages, allows for easy protocol extension.
 message MessageWrapper {
   oneof message_type {
     Handshake handshake = 1;
@@ -45,5 +89,10 @@ message MessageWrapper {
     RequestChunk request_chunk = 4;
     SendChunk send_chunk = 5;
     Metadata metadata = 6;
+    FindNodeRequest find_node_req = 7;
+    FindNodeResponse find_node_res = 8;
+    FindValueRequest find_value_req = 9;
+    FindValueResponse find_value_res = 10;
+    StoreValueRequest store_value_req = 11;
   }
 }

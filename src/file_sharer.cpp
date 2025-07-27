@@ -5,13 +5,13 @@
 #include <openssl/evp.h>
 #include <memory>
 
-// Helper для управления контекстом EVP_MD_CTX
+// Helper for managing EVP_MD_CTX context
 using EVP_MD_CTX_ptr = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)>;
 
-// Функция для удобного расчета хеша
-std::vector<uint8_t> calculate_sha256(const char* data, size_t len) {
+// Utility function for convenient SHA1 hash calculation
+std::vector<uint8_t> calculate_sha1(const char* data, size_t len) {
     EVP_MD_CTX_ptr mdctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
-    const EVP_MD* md = EVP_get_digestbyname("SHA256");
+    const EVP_MD* md = EVP_get_digestbyname("SHA1");
 
     EVP_DigestInit_ex(mdctx.get(), md, NULL);
     EVP_DigestUpdate(mdctx.get(), data, len);
@@ -38,12 +38,50 @@ bool FileSharer::share_file(const std::string& file_path, Node& node) {
     FileInfo file_info;
     file_info.file_path = file_path;
 
-    // ... (код хеширования)
+    file.seekg(0, std::ios::end);
+    file_info.file_size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // Calculate the hash of the entire file
+    EVP_MD_CTX_ptr mdctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
+    const EVP_MD* md = EVP_get_digestbyname("SHA1");
+    EVP_DigestInit_ex(mdctx.get(), md, NULL);
+
+    char buffer[CHUNK_SIZE];
+    while (file) {
+        file.read(buffer, CHUNK_SIZE);
+        std::streamsize count = file.gcount();
+        if (count > 0) {
+            // Hash of the chunk
+            file_info.chunk_hashes.push_back(calculate_sha1(buffer, count));
+            // Update the total hash
+            EVP_DigestUpdate(mdctx.get(), buffer, count);
+        }
+    }
+
+    file_info.file_hash.resize(EVP_MAX_MD_SIZE);
+    unsigned int hash_len;
+    EVP_DigestFinal_ex(mdctx.get(), file_info.file_hash.data(), &hash_len);
+    file_info.file_hash.resize(hash_len);
 
     std::string file_hash_str(file_info.file_hash.begin(), file_info.file_hash.end());
     node.available_files_[file_hash_str] = file_info;
 
-    // ... (код сохранения метафайла)
+    // Save metadata to a .aura file
+    aura::Metadata metadata;
+    metadata.set_file_hash(file_info.file_hash.data(), file_info.file_hash.size());
+    metadata.set_file_size(file_info.file_size);
+    metadata.set_chunk_size(CHUNK_SIZE);
+    for (const auto& hash : file_info.chunk_hashes) {
+        metadata.add_chunk_hashes(hash.data(), hash.size());
+    }
+
+    std::string metadata_path = file_path + ".aura";
+    std::ofstream metadata_file(metadata_path, std::ios::binary);
+    if (!metadata.SerializeToOstream(&metadata_file)) {
+        std::cerr << "Failed to write metadata file." << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -54,7 +92,7 @@ FileInfo FileSharer::load_metadata(const std::string& metadata_path) {
 
     std::ifstream metadata_file(metadata_path, std::ios::binary);
     if (!metadata.ParseFromIstream(&metadata_file)) {
-        return {}; // Возвращаем пустой объект, если не удалось прочитать
+        return {}; // Return an empty object if reading failed
     }
 
     file_info.file_hash.assign(metadata.file_hash().begin(), metadata.file_hash().end());
