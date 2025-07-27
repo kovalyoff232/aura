@@ -5,19 +5,22 @@
 
 namespace aura {
 
+class Node; // Forward declaration
+
 class Session : public std::enable_shared_from_this<Session> {
 public:
-    Session(boost::asio::ip::tcp::socket socket, uint64_t peer_id);
+    Session(boost::asio::ip::tcp::socket socket, Node& node);
 
     void start();
 
+    void do_write(const MessageWrapper& msg);
+
 private:
     void do_read();
-    void do_write(const MessageWrapper& msg);
 
     boost::asio::ip::tcp::socket socket_;
     std::vector<uint8_t> read_buffer_;
-    uint64_t node_peer_id_;
+    Node& node_;
     bool handshake_done_ = false;
 };
 

@@ -22,6 +22,7 @@ add_executable(aura
     src/main.cpp
     src/node.cpp
     src/session.cpp
+    src/file_sharer.cpp
     ${PROTO_SRCS}
 )
 

@@ -1,4 +1,18 @@
+# Environment variables
 .env
+
+# Build directory
 build/
+
+# IDE settings
 .idea/
+
+# Log files
 *.log
+
+# Aura metadata files
+*.aura
+
+# Test files
+test_file.txt
+downloaded_test_file.txt

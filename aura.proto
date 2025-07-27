@@ -13,11 +13,37 @@ message PeerInfo {
   uint32 port = 2;
 }
 
+message Announce {
+  bytes file_hash = 1;
+  uint64 file_size = 2;
+}
+
+message RequestChunk {
+  bytes file_hash = 1;
+  uint32 chunk_index = 2;
+}
+
+message SendChunk {
+  bytes file_hash = 1;
+  uint32 chunk_index = 2;
+  bytes data = 3;
+}
+
+message Metadata {
+  bytes file_hash = 1;
+  uint64 file_size = 2;
+  uint32 chunk_size = 3;
+  repeated bytes chunk_hashes = 4;
+}
+
 // "Конверт" для сообщений, позволяет легко расширять протокол.
 message MessageWrapper {
   oneof message_type {
     Handshake handshake = 1;
     PeerInfo peer_info = 2;
-    // TODO: Добавить сюда остальные типы сообщений из Фазы 2
+    Announce announce = 3;
+    RequestChunk request_chunk = 4;
+    SendChunk send_chunk = 5;
+    Metadata metadata = 6;
   }
 }
