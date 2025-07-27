@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package aura;
+
+message Handshake {
+  // Уникальный ID узла
+  uint64 peer_id = 1;
+  uint32 version = 2;
+}
+
+message PeerInfo {
+  string address = 1;
+  uint32 port = 2;
+}
+
+// "Конверт" для сообщений, позволяет легко расширять протокол.
+message MessageWrapper {
+  oneof message_type {
+    Handshake handshake = 1;
+    PeerInfo peer_info = 2;
+    // TODO: Добавить сюда остальные типы сообщений из Фазы 2
+  }
+}
